@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from src.controllers.productos_controller import ProductosController
 from src.db.conexion import get_db_connection
 
-coleccion, client = get_db_connection()
+coleccion = get_db_connection()
 controller = ProductosController(coleccion)
 
 productos_bp = Blueprint('productos', __name__)
@@ -26,13 +26,21 @@ def obtener_producto(id):
 @productos_bp.route('/productos/<string:id>', methods=['PUT'])
 def actualizar_producto(id):
     data = request.json
-    producto_actualizado = controller.actualizar_producto(id, data)
-    return jsonify(producto_actualizado), 200
+    resultado = controller.actualizar_producto(id, data)
+    if "error" in resultado:
+        return jsonify(resultado), 400
+    elif resultado.get("message") == "Producto no encontrado":
+        return jsonify(resultado), 404
+    return jsonify(resultado), 200
 
 @productos_bp.route('/productos/<string:id>', methods=['DELETE'])
 def eliminar_producto(id):
-    controller.eliminar_producto(id)
-    return jsonify({'message': 'Producto eliminado'}), 204
+    resultado = controller.eliminar_producto(id)
+    if "error" in resultado:
+        return jsonify(resultado), 400
+    elif resultado.get("message") == "Producto no encontrado":
+        return jsonify(resultado), 404
+    return jsonify(resultado), 200
 
 def configurar_rutas(app):
     app.register_blueprint(productos_bp)
